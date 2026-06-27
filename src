@@ -29,7 +29,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 380, 0, 210)
 MainFrame.Position = UDim2.new(0.5, -190, 0.5, -105)
 MainFrame.BackgroundColor3 = BgColor
-MainFrame.BackgroundTransparency = 0.15 -- Added transparency to match the style of the first image
+MainFrame.BackgroundTransparency = 0.15 
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
@@ -62,7 +62,7 @@ TextBox.Name = "KeyInput"
 TextBox.Size = UDim2.new(0, 320, 0, 38)
 TextBox.Position = UDim2.new(0.5, -160, 0, 65)
 TextBox.BackgroundColor3 = CardBgColor
-TextBox.BackgroundTransparency = 0.1 -- Slight transparency for internal fields
+TextBox.BackgroundTransparency = 0.1 
 TextBox.BorderSizePixel = 0
 TextBox.Text = ""
 TextBox.PlaceholderText = "Key Input"
@@ -76,11 +76,11 @@ local TextBoxCorner = Instance.new("UICorner")
 TextBoxCorner.CornerRadius = UDim.new(0, 10)
 TextBoxCorner.Parent = TextBox
 
--- Verify Button (Moved outward for more separate space)
+-- Verify Button
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Name = "VerifyBtn"
 VerifyBtn.Size = UDim2.new(0, 110, 0, 36)
-VerifyBtn.Position = UDim2.new(0, 25, 0, 125) -- Adjusted from 40 to 25 to push it left
+VerifyBtn.Position = UDim2.new(0, 25, 0, 125) 
 VerifyBtn.BackgroundColor3 = CardBgColor
 VerifyBtn.BackgroundTransparency = 0.1
 VerifyBtn.Text = "Verify"
@@ -94,11 +94,11 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 VerifyCorner.Parent = VerifyBtn
 
--- Get Key Button (Moved outward for more separate space)
+-- Get Key Button
 local GetBtn = Instance.new("TextButton")
 GetBtn.Name = "GetBtn"
 GetBtn.Size = UDim2.new(0, 110, 0, 36)
-GetBtn.Position = UDim2.new(1, -135, 0, 125) -- Adjusted from -150 to -135 to push it right
+GetBtn.Position = UDim2.new(1, -135, 0, 125) 
 GetBtn.BackgroundColor3 = CardBgColor
 GetBtn.BackgroundTransparency = 0.1
 GetBtn.Text = "Get"
@@ -123,7 +123,6 @@ StatusLabel.TextColor3 = Color3.fromRGB(110, 115, 115)
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 11
 StatusLabel.Parent = MainFrame
-
 
 -- Function to execute your Optimizer Script
 local function runOptimizerScript()
@@ -219,8 +218,9 @@ local function runOptimizerScript()
             elseif isBall then
                 return 
             elseif isCritical then  
-                obj.Material = Enum.Material.Neon 
-                obj.Color = Color3.fromRGB(255, 255, 255) 
+                obj.Material = Enum.Material.SmoothPlastic 
+                obj.Color = Color3.fromRGB(0, 220, 100) 
+                obj.Reflectance = 0
             else 
                 if string.find(nameLower, "tree") or string.find(nameLower, "palm") or string.find(nameLower, "leaf") or string.find(nameLower, "house") or string.find(nameLower, "building") or string.find(nameLower, "prop") or string.find(nameLower, "grass") then 
                     obj.Transparency = 1 
@@ -234,57 +234,85 @@ local function runOptimizerScript()
         end
     end
 
-    pcall(function() 
-        local descendants = Workspace:GetDescendants() 
-        for i, obj in ipairs(descendants) do 
-            if i % 300 == 0 then task.wait() end 
-            processObject(obj)
-        end 
-    end)
+    -- Core function to scan and process current map elements
+    local function runFullObjectScan()
+        pcall(function() 
+            local descendants = Workspace:GetDescendants() 
+            for i, obj in ipairs(descendants) do 
+                if i % 300 == 0 then task.wait() end 
+                processObject(obj)
+            end 
+        end)
+    end
 
+    -- Core function to apply Lighting, Shadows, and Environment optimization
+    local function applyLightingSettings()
+        pcall(function() 
+            for _, effect in ipairs(Lighting:GetChildren()) do 
+                if effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Clouds") or effect:IsA("SunRaysEffect") then 
+                    effect:Destroy()
+                end 
+            end 
+            
+            local targetSky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
+            targetSky.SkyboxBk = "rbxassetid://0"
+            targetSky.SkyboxDn = "rbxassetid://0"
+            targetSky.SkyboxFt = "rbxassetid://0"
+            targetSky.SkyboxLf = "rbxassetid://0"
+            targetSky.SkyboxRt = "rbxassetid://0"
+            targetSky.SkyboxUp = "rbxassetid://0"
+            targetSky.SunTextureId = ""
+            targetSky.MoonTextureId = ""
+            targetSky.CelestialBodiesShown = false
+
+            if Terrain then 
+                Terrain.WaterWaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterReflectance = 0; Terrain.WaterTransparency = 1; Terrain.Decoration = false 
+            end
+            
+            Lighting.GlobalShadows = false
+            Lighting.ShadowSoftness = 0 
+            Lighting.ClockTime = 14
+            Lighting.Brightness = 1
+            Lighting.Ambient = Color3.fromRGB(18, 48, 116)         
+            Lighting.OutdoorAmbient = Color3.fromRGB(12, 28, 74)   
+            Lighting.EnvironmentDiffuseScale = 0
+            Lighting.EnvironmentSpecularScale = 0
+            Lighting.FogEnd = 99999999
+            
+            SoundService.AmbientReverb = Enum.ReverbType.NoReverb
+            SoundService.DistanceFactor = 0
+            SoundService.DopplerScale = 0
+            UserInputService.MouseDeltaSensitivity = 1
+        end)
+    end
+
+    -- Initial setup execution
+    runFullObjectScan()
+    applyLightingSettings()
+
+    -- Dynamic monitoring for newly spawned map chunks/objects
     getgenv().PotatoOptimizerConnection = Workspace.DescendantAdded:Connect(function(obj)
         task.skip()
         pcall(processObject, obj)
     end)
 
-    pcall(function() 
-        for _, effect in ipairs(Lighting:GetChildren()) do 
-            if effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Clouds") or effect:IsA("SunRaysEffect") then 
-                effect:Destroy()
-            end 
-        end 
-        
-        local targetSky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
-        targetSky.SkyboxBk = "rbxassetid://0"
-        targetSky.SkyboxDn = "rbxassetid://0"
-        targetSky.SkyboxFt = "rbxassetid://0"
-        targetSky.SkyboxLf = "rbxassetid://0"
-        targetSky.SkyboxRt = "rbxassetid://0"
-        targetSky.SkyboxUp = "rbxassetid://0"
-        targetSky.SunTextureId = ""
-        targetSky.MoonTextureId = ""
-        targetSky.CelestialBodiesShown = false
-
-        if Terrain then 
-            Terrain.WaterWaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterReflectance = 0; Terrain.WaterTransparency = 1; Terrain.Decoration = false 
+    -- LOOP 1: Reapply whole potato graphic scanning 5 more times, once every 15 seconds
+    task.spawn(function()
+        for i = 1, 5 do
+            task.wait(15)
+            runFullObjectScan()
         end
-        
-        Lighting.GlobalShadows = false
-        Lighting.ShadowSoftness = 0 
-        Lighting.ClockTime = 14
-        Lighting.Brightness = 1
-        Lighting.Ambient = Color3.fromRGB(18, 48, 116)         
-        Lighting.OutdoorAmbient = Color3.fromRGB(12, 28, 74)   
-        Lighting.EnvironmentDiffuseScale = 0
-        Lighting.EnvironmentSpecularScale = 0
-        Lighting.FogEnd = 99999999
-        
-        SoundService.AmbientReverb = Enum.ReverbType.NoReverb
-        SoundService.DistanceFactor = 0
-        SoundService.DopplerScale = 0
-        UserInputService.MouseDeltaSensitivity = 1
-    end) 
+    end)
 
+    -- LOOP 2: Continuously enforce lightning/shadow settings every 5 seconds
+    task.spawn(function()
+        while getgenv().PotatoOptimizerLoaded do
+            task.wait(5)
+            applyLightingSettings()
+        end
+    end)
+
+    -- Send initialization confirmation
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", { 
             ["Title"] = "Fishy’s Collection", 
