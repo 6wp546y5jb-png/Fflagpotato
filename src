@@ -200,3 +200,4 @@ local function runOptimizerScript()
         end
     end)
 end
+runOptimizerScript()
