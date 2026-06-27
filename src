@@ -70,6 +70,13 @@ local function runOptimizerScript()
         if obj:IsA("BasePart") then 
             obj.CastShadow = false
             
+            -- Detects floors/ground parts with weird transparency values and forces them flat
+            if string.find(nameLower, "floor") or string.find(nameLower, "ground") or string.find(nameLower, "court") then
+                obj.Material = Enum.Material.SmoothPlastic
+                obj.Reflectance = 0
+                obj.Color = Color3.fromRGB(50, 50, 50) -- Darker grey to prevent "glowing" under bright ambient lighting
+            end
+            
             if obj.Transparency >= 0.9 or string.find(nameLower, "wall") or string.find(nameLower, "barrier") or string.find(nameLower, "clip") or string.find(nameLower, "invisible") then
                 obj.Transparency = 1
                 return
@@ -94,6 +101,7 @@ local function runOptimizerScript()
             elseif isBall then
                 return 
             elseif isCritical then  
+                -- KEPT SAME: Reverted back to neon white as requested
                 obj.Material = Enum.Material.Neon 
                 obj.Color = Color3.fromRGB(255, 255, 255) 
             else 
@@ -101,9 +109,10 @@ local function runOptimizerScript()
                     obj.Transparency = 1 
                     obj.CanCollide = false 
                 else 
+                    -- CHANGED: Lowered color intensity from (100,100,100) to (50,50,50) to stop ambient light reflection loops
                     obj.Material = Enum.Material.SmoothPlastic 
                     obj.Reflectance = 0 
-                    obj.Color = Color3.fromRGB(100, 100, 100) 
+                    obj.Color = Color3.fromRGB(50, 50, 50) 
                 end 
             end 
         end
@@ -177,6 +186,7 @@ local function runOptimizerScript()
         for iteration = 1, 5 do
             pcall(function() 
                 local descendants = Workspace:GetDescendants() 
+                
                 for i, obj in ipairs(descendants) do 
                     if i % 300 == 0 then task.wait() end 
                     processObject(obj)
