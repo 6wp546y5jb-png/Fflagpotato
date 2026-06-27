@@ -1,6 +1,6 @@
 -- Configuration
-local CORRECT_KEY = "FishyKey123" -- Change this to your desired key
-local DISCORD_LINK = "https://discord.gg/yourlink" -- Change this to your Discord link
+local CORRECT_KEY = "LovrsRock" -- Change this to your desired key
+local DISCORD_LINK = "https://discord.gg/skPJstQQhD" -- Change this to your Discord link
 
 -- Key System UI Creation
 local CoreGui = game:GetService("CoreGui")
