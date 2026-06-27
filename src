@@ -1,8 +1,8 @@
 -- Configuration
-local CORRECT_KEY = "LovrsRock" -- Change this to your desired key
-local DISCORD_LINK = "https://discord.gg/skPJstQQhD" -- Change this to your Discord link
+local API_URL = "https://7c1a702f-7093-4d24-ac59-917b70c12ab1-00-14inw9n9xj1mc.spock.replit.dev"
+local DISCORD_LINK = "https://discord.gg/skPJstQQhD" 
 
--- Key System UI Creation
+local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -17,11 +17,11 @@ ScreenGui.Name = "FishysCollectionKeySystem"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
--- Sleek Modern Theme Configuration (With Transparency & Perfect Spacing)
-local BorderColor = Color3.fromRGB(45, 120, 75)   -- Muted, dark matte green border
-local BgColor = Color3.fromRGB(12, 14, 15)        -- Deep slate black/dark grey
-local CardBgColor = Color3.fromRGB(18, 20, 22)    -- Slightly lighter dark fill for modern contrast
-local TextGreen = Color3.fromRGB(70, 185, 115)    -- Flat, clean accent green for text elements
+-- Sleek Modern Theme Configuration
+local BorderColor = Color3.fromRGB(45, 120, 75)   
+local BgColor = Color3.fromRGB(12, 14, 15)        
+local CardBgColor = Color3.fromRGB(18, 20, 22)    
+local TextGreen = Color3.fromRGB(70, 185, 115)    
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
@@ -124,7 +124,7 @@ StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 11
 StatusLabel.Parent = MainFrame
 
--- Function to execute your Optimizer Script
+-- Optimizer Main Script Function
 local function runOptimizerScript()
     if getgenv().PotatoOptimizerConnection then
         getgenv().PotatoOptimizerConnection:Disconnect()
@@ -234,7 +234,6 @@ local function runOptimizerScript()
         end
     end
 
-    -- Core function to scan and process current map elements
     local function runFullObjectScan()
         pcall(function() 
             local descendants = Workspace:GetDescendants() 
@@ -245,7 +244,6 @@ local function runOptimizerScript()
         end)
     end
 
-    -- Core function to apply Lighting, Shadows, and Environment optimization
     local function applyLightingSettings()
         pcall(function() 
             for _, effect in ipairs(Lighting:GetChildren()) do 
@@ -286,17 +284,14 @@ local function runOptimizerScript()
         end)
     end
 
-    -- Initial setup execution
     runFullObjectScan()
     applyLightingSettings()
 
-    -- Dynamic monitoring for newly spawned map chunks/objects
     getgenv().PotatoOptimizerConnection = Workspace.DescendantAdded:Connect(function(obj)
         task.skip()
         pcall(processObject, obj)
     end)
 
-    -- LOOP 1: Reapply whole potato graphic scanning 5 more times, once every 15 seconds
     task.spawn(function()
         for i = 1, 5 do
             task.wait(15)
@@ -304,7 +299,6 @@ local function runOptimizerScript()
         end
     end)
 
-    -- LOOP 2: Continuously enforce lightning/shadow settings every 5 seconds
     task.spawn(function()
         while getgenv().PotatoOptimizerLoaded do
             task.wait(5)
@@ -312,7 +306,6 @@ local function runOptimizerScript()
         end
     end)
 
-    -- Send initialization confirmation
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", { 
             ["Title"] = "Fishy’s Collection", 
@@ -322,7 +315,7 @@ local function runOptimizerScript()
     end)
 end
 
--- Button Logic & Interactivity
+-- Button Logic & Dynamic Verification Interactivity
 GetBtn.MouseButton1Click:Connect(function()
     if setclipboard then
         setclipboard(DISCORD_LINK)
@@ -336,14 +329,41 @@ GetBtn.MouseButton1Click:Connect(function()
 end)
 
 VerifyBtn.MouseButton1Click:Connect(function()
-    if TextBox.Text == CORRECT_KEY then
-        StatusLabel.Text = "Key Approved! Loading script..."
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        task.wait(1)
-        ScreenGui:Destroy()
-        runOptimizerScript()
-    else
-        StatusLabel.Text = "Incorrect key. Please try again."
+    local enteredKey = TextBox.Text
+    
+    if enteredKey == "" then
+        StatusLabel.Text = "Please enter a key."
         StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+        return
+    end
+
+    StatusLabel.Text = "Checking key..."
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+    -- Send request directly to Replit Key Manager backend endpoint
+    local success, response = pcall(function()
+        return HttpService:GetAsync(API_URL .. "/verify?key=" .. HttpService:UrlEncode(enteredKey))
+    end)
+
+    if success then
+        local decodeSuccess, data = pcall(function()
+            return HttpService:JSONDecode(response)
+        end)
+
+        -- Verifies key status based on server response values
+        if decodeSuccess and (data.valid == true or data.status == "success" or response == "true") then
+            StatusLabel.Text = "Key Approved! Loading script..."
+            StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            task.wait(1)
+            ScreenGui:Destroy()
+            runOptimizerScript()
+        else
+            StatusLabel.Text = "Incorrect key. Please try again."
+            StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+        end
+    else
+        StatusLabel.Text = "Server error. Could not verify key."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+        warn("HTTP Error response details: " .. tostring(response))
     end
 end)
