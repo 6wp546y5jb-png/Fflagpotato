@@ -1,6 +1,3 @@
--- Configuration
-local CORRECT_KEY = "LovrsRock" -- Change this to your desired key
-local DISCORD_LINK = "https://discord.gg/skPJstQQhD" -- Change this to your Discord link
 
 -- Key System UI Creation
 local CoreGui = game:GetService("CoreGui")
