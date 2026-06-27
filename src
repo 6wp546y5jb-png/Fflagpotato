@@ -1,11 +1,15 @@
--- Ensure the script only runs once
-if getgenv().PotatoOptimizerLoaded then return end
+
+if getgenv().PotatoOptimizerConnection then
+    getgenv().PotatoOptimizerConnection:Disconnect()
+    getgenv().PotatoOptimizerConnection = nil
+end
+
 getgenv().PotatoOptimizerLoaded = true
 
--- Target FPS set to 999
+
 if setfpscap then setfpscap(999) end
 
--- Services
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
@@ -17,107 +21,117 @@ local LocalPlayer = Players.LocalPlayer
 
 local BALL_GUESSES = {"Volleyball", "Ball", "Football", "MainBall", "GameBall", "VBall"}
 
--------------------------------------------------------------------------------
--- Full "Potato Map" Reconstruction & Asset Stripping
--------------------------------------------------------------------------------
-pcall(function() 
-    local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
-    local descendants = Workspace:GetDescendants() 
+
+local function processObject(obj)
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local nameLower = string.lower(obj.Name)
     
+    
+    local isLookArrow = string.find(nameLower, "arrow") or string.find(nameLower, "ray") or string.find(nameLower, "look") or string.find(nameLower, "pointer")
+    if isLookArrow then
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.Neon
+            obj.Color = Color3.fromRGB(0, 255, 0) 
+            obj.Transparency = 0
+            obj.CastShadow = false
+            obj.CFrame = CFrame.new(obj.CFrame.X, 0.5, obj.CFrame.Z)
+            return
+        elseif obj:IsA("Beam") or obj:IsA("Trail") then
+            obj.Color = ColorSequence.new(Color3.fromRGB(0, 255, 0)) 
+            obj.Enabled = true
+            return
+        end
+    end
+    
+    
+    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sparkles") or obj:IsA("Smoke") or obj:IsA("Fire") then
+        obj:Destroy()
+        return
+    end
+    
+    
+    if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
+        obj:Destroy()
+        return
+    end
+    
+    
+    if obj:IsA("Clouds") or obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("SunRaysEffect") then 
+        return 
+    end 
+    
+ 
+    local isGuiObject = obj:IsDescendantOf(game:GetService("CoreGui")) or (playerGui and obj:IsDescendantOf(playerGui)) 
+    if isGuiObject then return end
+
+    local parent = obj.Parent 
+    local isPlayerPart = parent and (parent:IsA("Model") and Players:GetPlayerFromCharacter(parent)) or (parent and parent.Parent and parent.Parent:IsA("Model") and Players:GetPlayerFromCharacter(parent.Parent))
+    
+
+    if isPlayerPart and (obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("Clothing") or obj:IsA("CharacterMesh") or obj:IsA("BodyColors") or obj:IsA("Accessory")) then
+        obj:Destroy()
+        return
+    end
+    
+   
+    if obj:IsA("BasePart") then 
+        obj.CastShadow = false -- Force shadows off
+        
+        if obj.Transparency >= 0.9 or string.find(nameLower, "wall") or string.find(nameLower, "barrier") or string.find(nameLower, "clip") or string.find(nameLower, "invisible") then
+            obj.Transparency = 1
+            return
+        end
+        
+        local isBall = false
+        for _, ballName in ipairs(BALL_GUESSES) do
+            if obj.Name == ballName or string.find(nameLower, "ball") then
+                isBall = true
+                break
+            end
+        end
+         
+        local isCritical = string.find(nameLower, "indicator") or string.find(nameLower, "net") or string.find(nameLower, "court") or string.find(nameLower, "line") 
+
+        if isPlayerPart then 
+            if not (string.find(nameLower, "arm") or string.find(nameLower, "hand")) then
+                obj.Material = Enum.Material.Metal
+                obj.Color = Color3.fromRGB(15, 15, 15) 
+                obj.Reflectance = 0.3
+            end
+        elseif isBall then
+            return 
+        elseif isCritical then  
+            obj.Material = Enum.Material.Neon 
+            obj.Color = Color3.fromRGB(255, 255, 255) 
+        else 
+            if string.find(nameLower, "tree") or string.find(nameLower, "palm") or string.find(nameLower, "leaf") or string.find(nameLower, "house") or string.find(nameLower, "building") or string.find(nameLower, "prop") or string.find(nameLower, "grass") then 
+                obj.Transparency = 1 
+                obj.CanCollide = false 
+            else 
+                obj.Material = Enum.Material.SmoothPlastic 
+                obj.Reflectance = 0 
+                obj.Color = Color3.fromRGB(100, 100, 100) 
+            end 
+        end 
+    end
+end
+
+
+pcall(function() 
+    local descendants = Workspace:GetDescendants() 
     for i, obj in ipairs(descendants) do 
         if i % 300 == 0 then task.wait() end 
-        
-        local nameLower = string.lower(obj.Name)
-        
-        local isLookArrow = string.find(nameLower, "arrow") or string.find(nameLower, "ray") or string.find(nameLower, "look") or string.find(nameLower, "pointer")
-        if isLookArrow then
-            if obj:IsA("BasePart") then
-                obj.Material = Enum.Material.Neon
-                obj.Color = Color3.fromRGB(0, 255, 0) 
-                obj.Transparency = 0
-                obj.CastShadow = false
-                obj.CFrame = CFrame.new(obj.CFrame.X, 0.5, obj.CFrame.Z)
-                continue
-            elseif obj:IsA("Beam") or obj:IsA("Trail") then
-                obj.Color = ColorSequence.new(Color3.fromRGB(0, 255, 0)) 
-                obj.Enabled = true
-                continue
-            end
-        end
-        
-        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sparkles") or obj:IsA("Smoke") or obj:IsA("Fire") then
-            obj:Destroy()
-            continue
-        end
-        
-        if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
-            obj:Destroy()
-            continue
-        end
-        
-        if obj:IsA("Clouds") or obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("SunRaysEffect") then 
-            continue 
-        end 
-        
-        local isGuiObject = obj:IsDescendantOf(game:GetService("CoreGui")) or (playerGui and obj:IsDescendantOf(playerGui)) 
-        
-        if not isGuiObject then
-            local parent = obj.Parent 
-            local isPlayerPart = parent and (parent:IsA("Model") and Players:GetPlayerFromCharacter(parent)) or (parent and parent.Parent and parent.Parent:IsA("Model") and Players:GetPlayerFromCharacter(parent.Parent))
-            
-            if isPlayerPart and (obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("Clothing") or obj:IsA("CharacterMesh") or obj:IsA("BodyColors") or obj:IsA("Accessory")) then
-                obj:Destroy()
-                continue
-            end
-            
-            if obj:IsA("BasePart") then 
-                if obj.Transparency >= 0.9 or string.find(nameLower, "wall") or string.find(nameLower, "barrier") or string.find(nameLower, "clip") or string.find(nameLower, "invisible") then
-                    obj.Transparency = 1
-                    obj.CastShadow = false
-                    continue
-                end
-
-                obj.CastShadow = false 
-                
-                local isBall = false
-                for _, ballName in ipairs(BALL_GUESSES) do
-                    if obj.Name == ballName or string.find(nameLower, "ball") then
-                        isBall = true
-                        break
-                    end
-                end
-                 
-                local isCritical = string.find(nameLower, "indicator") or string.find(nameLower, "net") or string.find(nameLower, "court") or string.find(nameLower, "line") 
-
-                if isPlayerPart then 
-                    if not (string.find(nameLower, "arm") or string.find(nameLower, "hand")) then
-                        obj.Material = Enum.Material.Metal
-                        obj.Color = Color3.fromRGB(15, 15, 15) 
-                        obj.Reflectance = 0.3
-                    end
-                elseif isBall then
-                    continue 
-                elseif isCritical then  
-                    obj.Material = Enum.Material.Neon 
-                    obj.Color = Color3.fromRGB(255, 255, 255) 
-                else 
-                    if string.find(nameLower, "tree") or string.find(nameLower, "palm") or string.find(nameLower, "leaf") or string.find(nameLower, "house") or string.find(nameLower, "building") or string.find(nameLower, "prop") or string.find(nameLower, "grass") then 
-                        obj.Transparency = 1 
-                        obj.CanCollide = false 
-                    else 
-                        obj.Material = Enum.Material.SmoothPlastic 
-                        obj.Reflectance = 0 
-                        obj.Color = Color3.fromRGB(100, 100, 100) 
-                    end 
-                end 
-            end
-        end 
+        processObject(obj)
     end 
 end)
 
--------------------------------------------------------------------------------
--- Environment, Post-Processing, & Lighting Strip
--------------------------------------------------------------------------------
+
+getgenv().PotatoOptimizerConnection = Workspace.DescendantAdded:Connect(function(obj)
+    task.skip() -- Safely wait for properties to instantiate
+    pcall(processObject, obj)
+end)
+
+
 pcall(function() 
     for _, effect in ipairs(Lighting:GetChildren()) do 
         if effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Clouds") or effect:IsA("SunRaysEffect") then 
@@ -156,9 +170,7 @@ pcall(function()
     UserInputService.MouseDeltaSensitivity = 1
 end) 
 
--------------------------------------------------------------------------------
--- Notification Delivery
--------------------------------------------------------------------------------
+
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", { 
         ["Title"] = "fishylvl", 
