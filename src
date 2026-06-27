@@ -1,180 +1,331 @@
+-- Configuration
+local CORRECT_KEY = "FishyKey123" -- Change this to your desired key
+local DISCORD_LINK = "https://discord.gg/yourlink" -- Change this to your Discord link
 
-if getgenv().PotatoOptimizerConnection then
-    getgenv().PotatoOptimizerConnection:Disconnect()
-    getgenv().PotatoOptimizerConnection = nil
-end
-
-getgenv().PotatoOptimizerLoaded = true
-
-
-if setfpscap then setfpscap(999) end
-
-
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local SoundService = game:GetService("SoundService")
+-- Key System UI Creation
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-local Terrain = Workspace:FindFirstChildOfClass("Terrain")
-local LocalPlayer = Players.LocalPlayer
-
-local BALL_GUESSES = {"Volleyball", "Ball", "Football", "MainBall", "GameBall", "VBall"}
-
-
-local function processObject(obj)
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    local nameLower = string.lower(obj.Name)
-    
-    
-    local isLookArrow = string.find(nameLower, "arrow") or string.find(nameLower, "ray") or string.find(nameLower, "look") or string.find(nameLower, "pointer")
-    if isLookArrow then
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Neon
-            obj.Color = Color3.fromRGB(0, 255, 0) 
-            obj.Transparency = 0
-            obj.CastShadow = false
-            obj.CFrame = CFrame.new(obj.CFrame.X, 0.5, obj.CFrame.Z)
-            return
-        elseif obj:IsA("Beam") or obj:IsA("Trail") then
-            obj.Color = ColorSequence.new(Color3.fromRGB(0, 255, 0)) 
-            obj.Enabled = true
-            return
-        end
-    end
-    
-    
-    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sparkles") or obj:IsA("Smoke") or obj:IsA("Fire") then
-        obj:Destroy()
-        return
-    end
-    
-    
-    if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
-        obj:Destroy()
-        return
-    end
-    
-    
-    if obj:IsA("Clouds") or obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("SunRaysEffect") then 
-        return 
-    end 
-    
- 
-    local isGuiObject = obj:IsDescendantOf(game:GetService("CoreGui")) or (playerGui and obj:IsDescendantOf(playerGui)) 
-    if isGuiObject then return end
-
-    local parent = obj.Parent 
-    local isPlayerPart = parent and (parent:IsA("Model") and Players:GetPlayerFromCharacter(parent)) or (parent and parent.Parent and parent.Parent:IsA("Model") and Players:GetPlayerFromCharacter(parent.Parent))
-    
-
-    if isPlayerPart and (obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("Clothing") or obj:IsA("CharacterMesh") or obj:IsA("BodyColors") or obj:IsA("Accessory")) then
-        obj:Destroy()
-        return
-    end
-    
-   
-    if obj:IsA("BasePart") then 
-        obj.CastShadow = false -- Force shadows off
-        
-        if obj.Transparency >= 0.9 or string.find(nameLower, "wall") or string.find(nameLower, "barrier") or string.find(nameLower, "clip") or string.find(nameLower, "invisible") then
-            obj.Transparency = 1
-            return
-        end
-        
-        local isBall = false
-        for _, ballName in ipairs(BALL_GUESSES) do
-            if obj.Name == ballName or string.find(nameLower, "ball") then
-                isBall = true
-                break
-            end
-        end
-         
-        local isCritical = string.find(nameLower, "indicator") or string.find(nameLower, "net") or string.find(nameLower, "court") or string.find(nameLower, "line") 
-
-        if isPlayerPart then 
-            if not (string.find(nameLower, "arm") or string.find(nameLower, "hand")) then
-                obj.Material = Enum.Material.Metal
-                obj.Color = Color3.fromRGB(15, 15, 15) 
-                obj.Reflectance = 0.3
-            end
-        elseif isBall then
-            return 
-        elseif isCritical then  
-            obj.Material = Enum.Material.Neon 
-            obj.Color = Color3.fromRGB(255, 255, 255) 
-        else 
-            if string.find(nameLower, "tree") or string.find(nameLower, "palm") or string.find(nameLower, "leaf") or string.find(nameLower, "house") or string.find(nameLower, "building") or string.find(nameLower, "prop") or string.find(nameLower, "grass") then 
-                obj.Transparency = 1 
-                obj.CanCollide = false 
-            else 
-                obj.Material = Enum.Material.SmoothPlastic 
-                obj.Reflectance = 0 
-                obj.Color = Color3.fromRGB(100, 100, 100) 
-            end 
-        end 
-    end
+-- Prevent duplicate UIs
+if CoreGui:FindFirstChild("FishysCollectionKeySystem") then
+    CoreGui:FindFirstChild("FishysCollectionKeySystem"):Destroy()
 end
 
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FishysCollectionKeySystem"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
 
-pcall(function() 
-    local descendants = Workspace:GetDescendants() 
-    for i, obj in ipairs(descendants) do 
-        if i % 300 == 0 then task.wait() end 
-        processObject(obj)
-    end 
-end)
+-- Theme Color Configuration (Neon Forest Green Theme)
+local ThemeColor = Color3.fromRGB(0, 220, 100) -- Vibrant Neon Forest Green
+local BgColor = Color3.fromRGB(10, 14, 12)     -- Very Dark Green/Slate Black
+local CardBgColor = Color3.fromRGB(5, 8, 6)     -- Darker fill for boxes
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 380, 0, 210)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -105)
+MainFrame.BackgroundColor3 = BgColor
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true 
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = ThemeColor
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
+
+-- Header Title
+local Header = Instance.new("TextLabel")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 45)
+Header.Position = UDim2.new(0, 0, 0, 5)
+Header.BackgroundTransparency = 1
+Header.Text = "Kurby's Hub | Key System"
+Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+Header.Font = Enum.Font.GothamBold
+Header.TextSize = 16
+Header.Parent = MainFrame
+
+-- Input Box (TextBox)
+local TextBox = Instance.new("TextBox")
+TextBox.Name = "KeyInput"
+TextBox.Size = UDim2.new(0, 320, 0, 36)
+TextBox.Position = UDim2.new(0.5, -160, 0, 60)
+TextBox.BackgroundColor3 = CardBgColor
+TextBox.BorderSizePixel = 0
+TextBox.Text = ""
+TextBox.PlaceholderText = "Key Input"
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
+TextBox.Font = Enum.Font.GothamBold
+TextBox.TextSize = 14
+TextBox.Parent = MainFrame
+
+local TextBoxCorner = Instance.new("UICorner")
+TextBoxCorner.CornerRadius = UDim.new(0, 18)
+TextBoxCorner.Parent = TextBox
+
+local TextBoxStroke = Instance.new("UIStroke")
+TextBoxStroke.Color = ThemeColor
+TextBoxStroke.Thickness = 1.5
+TextBoxStroke.Parent = TextBox
+
+-- Verify Button
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Name = "VerifyBtn"
+VerifyBtn.Size = UDim2.new(0, 110, 0, 36)
+VerifyBtn.Position = UDim2.new(0, 30, 0, 120)
+VerifyBtn.BackgroundColor3 = CardBgColor
+VerifyBtn.Text = "Verify"
+VerifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.TextSize = 14
+VerifyBtn.BorderSizePixel = 0
+VerifyBtn.Parent = MainFrame
+
+local VerifyCorner = Instance.new("UICorner")
+VerifyCorner.CornerRadius = UDim.new(0, 8)
+VerifyCorner.Parent = VerifyBtn
+
+local VerifyStroke = Instance.new("UIStroke")
+VerifyStroke.Color = ThemeColor
+VerifyStroke.Thickness = 1.5
+VerifyStroke.Parent = VerifyBtn
+
+-- Get Key Button
+local GetBtn = Instance.new("TextButton")
+GetBtn.Name = "GetBtn"
+GetBtn.Size = UDim2.new(0, 110, 0, 36)
+GetBtn.Position = UDim2.new(1, -140, 0, 120)
+GetBtn.BackgroundColor3 = CardBgColor
+GetBtn.Text = "Get"
+GetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetBtn.Font = Enum.Font.GothamBold
+GetBtn.TextSize = 14
+GetBtn.BorderSizePixel = 0
+GetBtn.Parent = MainFrame
+
+local GetCorner = Instance.new("UICorner")
+GetCorner.CornerRadius = UDim.new(0, 8)
+GetCorner.Parent = GetBtn
+
+local GetStroke = Instance.new("UIStroke")
+GetStroke.Color = ThemeColor
+GetStroke.Thickness = 1.5
+GetStroke.Parent = GetBtn
+
+-- Status Text
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(1, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0, 0, 1, -30)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Waiting for key verification..."
+StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 11
+StatusLabel.Parent = MainFrame
 
 
-getgenv().PotatoOptimizerConnection = Workspace.DescendantAdded:Connect(function(obj)
-    task.skip() -- Safely wait for properties to instantiate
-    pcall(processObject, obj)
-end)
-
-
-pcall(function() 
-    for _, effect in ipairs(Lighting:GetChildren()) do 
-        if effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Clouds") or effect:IsA("SunRaysEffect") then 
-            effect:Destroy()
-        end 
-    end 
-    
-    local targetSky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
-    targetSky.SkyboxBk = "rbxassetid://0"
-    targetSky.SkyboxDn = "rbxassetid://0"
-    targetSky.SkyboxFt = "rbxassetid://0"
-    targetSky.SkyboxLf = "rbxassetid://0"
-    targetSky.SkyboxRt = "rbxassetid://0"
-    targetSky.SkyboxUp = "rbxassetid://0"
-    targetSky.SunTextureId = ""
-    targetSky.MoonTextureId = ""
-    targetSky.CelestialBodiesShown = false
-
-    if Terrain then 
-        Terrain.WaterWaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterReflectance = 0; Terrain.WaterTransparency = 1; Terrain.Decoration = false 
+-- Function to execute your Optimizer Script
+local function runOptimizerScript()
+    if getgenv().PotatoOptimizerConnection then
+        getgenv().PotatoOptimizerConnection:Disconnect()
+        getgenv().PotatoOptimizerConnection = nil
     end
-    
-    Lighting.GlobalShadows = false
-    Lighting.ShadowSoftness = 0 
-    Lighting.ClockTime = 14
-    Lighting.Brightness = 1
-    Lighting.Ambient = Color3.fromRGB(18, 48, 116)         
-    Lighting.OutdoorAmbient = Color3.fromRGB(12, 28, 74)   
-    Lighting.EnvironmentDiffuseScale = 0
-    Lighting.EnvironmentSpecularScale = 0
-    Lighting.FogEnd = 99999999
-    
-    SoundService.AmbientReverb = Enum.ReverbType.NoReverb
-    SoundService.DistanceFactor = 0
-    SoundService.DopplerScale = 0
-    UserInputService.MouseDeltaSensitivity = 1
-end) 
 
+    getgenv().PotatoOptimizerLoaded = true
 
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", { 
-        ["Title"] = "fishylvl", 
-        ["Text"] = "welcome.", 
-        ["Duration"] = 5 
-    })
+    if setfpscap then setfpscap(999) end
+
+    local Players = game:GetService("Players")
+    local Workspace = game:GetService("Workspace")
+    local Lighting = game:GetService("Lighting")
+    local SoundService = game:GetService("SoundService")
+    local UserInputService = game:GetService("UserInputService")
+
+    local Terrain = Workspace:FindFirstChildOfClass("Terrain")
+    local LocalPlayer = Players.LocalPlayer
+
+    local BALL_GUESSES = {"Volleyball", "Ball", "Football", "MainBall", "GameBall", "VBall"}
+
+    local function processObject(obj)
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local nameLower = string.lower(obj.Name)
+        
+        local isLookArrow = string.find(nameLower, "arrow") or string.find(nameLower, "ray") or string.find(nameLower, "look") or string.find(nameLower, "pointer")
+        if isLookArrow then
+            if obj:IsA("BasePart") then
+                obj.Material = Enum.Material.Neon
+                obj.Color = Color3.fromRGB(0, 255, 0) 
+                obj.Transparency = 0
+                obj.CastShadow = false
+                obj.CFrame = CFrame.new(obj.CFrame.X, 0.5, obj.CFrame.Z)
+                return
+            elseif obj:IsA("Beam") or obj:IsA("Trail") then
+                obj.Color = ColorSequence.new(Color3.fromRGB(0, 255, 0)) 
+                obj.Enabled = true
+                return
+            end
+        end
+        
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sparkles") or obj:IsA("Smoke") or obj:IsA("Fire") then
+            obj:Destroy()
+            return
+        end
+        
+        if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
+            obj:Destroy()
+            return
+        end
+        
+        if obj:IsA("Clouds") or obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("SunRaysEffect") then 
+            return 
+        end 
+        
+        local isGuiObject = obj:IsDescendantOf(game:GetService("CoreGui")) or (playerGui and obj:IsDescendantOf(playerGui)) 
+        if isGuiObject then return end
+
+        local parent = obj.Parent 
+        local isPlayerPart = parent and (parent:IsA("Model") and Players:GetPlayerFromCharacter(parent)) or (parent and parent.Parent and parent.Parent:IsA("Model") and Players:GetPlayerFromCharacter(parent.Parent))
+        
+        if isPlayerPart and (obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("Clothing") or obj:IsA("CharacterMesh") or obj:IsA("BodyColors") or obj:IsA("Accessory")) then
+            obj:Destroy()
+            return
+        end
+        
+        if obj:IsA("BasePart") then 
+            obj.CastShadow = false
+            
+            if obj.Transparency >= 0.9 or string.find(nameLower, "wall") or string.find(nameLower, "barrier") or string.find(nameLower, "clip") or string.find(nameLower, "invisible") then
+                obj.Transparency = 1
+                return
+            end
+            
+            local isBall = false
+            for _, ballName in ipairs(BALL_GUESSES) do
+                if obj.Name == ballName or string.find(nameLower, "ball") then
+                    isBall = true
+                    break
+                end
+            end
+             
+            local isCritical = string.find(nameLower, "indicator") or string.find(nameLower, "net") or string.find(nameLower, "court") or string.find(nameLower, "line") 
+
+            if isPlayerPart then 
+                if not (string.find(nameLower, "arm") or string.find(nameLower, "hand")) then
+                    obj.Material = Enum.Material.Metal
+                    obj.Color = Color3.fromRGB(15, 15, 15) 
+                    obj.Reflectance = 0.3
+                end
+            elseif isBall then
+                return 
+            elseif isCritical then  
+                obj.Material = Enum.Material.Neon 
+                obj.Color = Color3.fromRGB(255, 255, 255) 
+            else 
+                if string.find(nameLower, "tree") or string.find(nameLower, "palm") or string.find(nameLower, "leaf") or string.find(nameLower, "house") or string.find(nameLower, "building") or string.find(nameLower, "prop") or string.find(nameLower, "grass") then 
+                    obj.Transparency = 1 
+                    obj.CanCollide = false 
+                else 
+                    obj.Material = Enum.Material.SmoothPlastic 
+                    obj.Reflectance = 0 
+                    obj.Color = Color3.fromRGB(100, 100, 100) 
+                end 
+            end 
+        end
+    end
+
+    pcall(function() 
+        local descendants = Workspace:GetDescendants() 
+        for i, obj in ipairs(descendants) do 
+            if i % 300 == 0 then task.wait() end 
+            processObject(obj)
+        end 
+    end)
+
+    getgenv().PotatoOptimizerConnection = Workspace.DescendantAdded:Connect(function(obj)
+        task.skip()
+        pcall(processObject, obj)
+    end)
+
+    pcall(function() 
+        for _, effect in ipairs(Lighting:GetChildren()) do 
+            if effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("Atmosphere") or effect:IsA("Clouds") or effect:IsA("SunRaysEffect") then 
+                effect:Destroy()
+            end 
+        end 
+        
+        local targetSky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
+        targetSky.SkyboxBk = "rbxassetid://0"
+        targetSky.SkyboxDn = "rbxassetid://0"
+        targetSky.SkyboxFt = "rbxassetid://0"
+        targetSky.SkyboxLf = "rbxassetid://0"
+        targetSky.SkyboxRt = "rbxassetid://0"
+        targetSky.SkyboxUp = "rbxassetid://0"
+        targetSky.SunTextureId = ""
+        targetSky.MoonTextureId = ""
+        targetSky.CelestialBodiesShown = false
+
+        if Terrain then 
+            Terrain.WaterWaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterReflectance = 0; Terrain.WaterTransparency = 1; Terrain.Decoration = false 
+        end
+        
+        Lighting.GlobalShadows = false
+        Lighting.ShadowSoftness = 0 
+        Lighting.ClockTime = 14
+        Lighting.Brightness = 1
+        Lighting.Ambient = Color3.fromRGB(18, 48, 116)         
+        Lighting.OutdoorAmbient = Color3.fromRGB(12, 28, 74)   
+        Lighting.EnvironmentDiffuseScale = 0
+        Lighting.EnvironmentSpecularScale = 0
+        Lighting.FogEnd = 99999999
+        
+        SoundService.AmbientReverb = Enum.ReverbType.NoReverb
+        SoundService.DistanceFactor = 0
+        SoundService.DopplerScale = 0
+        UserInputService.MouseDeltaSensitivity = 1
+    end) 
+
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", { 
+            ["Title"] = "Fishy’s Collection", 
+            ["Text"] = "Script successfully activated!", 
+            ["Duration"] = 5 
+        })
+    end)
+end
+
+-- Button Logic & Interactivity
+GetBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(DISCORD_LINK)
+        StatusLabel.Text = "Discord link copied to clipboard!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    else
+        StatusLabel.Text = "Clipboard unsupported. Check F9 console."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        print("Discord Link: " .. DISCORD_LINK)
+    end
+end)
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    if TextBox.Text == CORRECT_KEY then
+        StatusLabel.Text = "Key Approved! Loading script..."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        task.wait(1)
+        ScreenGui:Destroy()
+        runOptimizerScript()
+    else
+        StatusLabel.Text = "Incorrect key. Please try again."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+    end
 end)
