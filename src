@@ -154,7 +154,7 @@ local function runOptimizerScript()
         if isLookArrow then
             if obj:IsA("BasePart") then
                 obj.Material = Enum.Material.Neon
-                obj.Color = Color3.fromRGB(0, 255, 0) 
+                obj.Color = Color3.fromRGB(40, 255, 0) 
                 obj.Transparency = 0
                 obj.CastShadow = false
                 obj.CFrame = CFrame.new(obj.CFrame.X, 0.5, obj.CFrame.Z)
@@ -219,7 +219,7 @@ local function runOptimizerScript()
                 return 
             elseif isCritical then  
                 obj.Material = Enum.Material.SmoothPlastic 
-                obj.Color = Color3.fromRGB(0, 220, 100) 
+                obj.Color = Color3.fromRGB(48, 50, 52) 
                 obj.Reflectance = 0
             else 
                 if string.find(nameLower, "tree") or string.find(nameLower, "palm") or string.find(nameLower, "leaf") or string.find(nameLower, "house") or string.find(nameLower, "building") or string.find(nameLower, "prop") or string.find(nameLower, "grass") then 
