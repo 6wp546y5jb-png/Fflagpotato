@@ -1,11 +1,11 @@
-local HttpService = game:GetService("HttpService")
+-- Configuration
+local CORRECT_KEY = "LovrsRock" -- Change this to your desired key
+local DISCORD_LINK = "https://discord.gg/skPJstQQhD" -- Change this to your Discord link
+
+-- Key System UI Creation
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-
--- Configuration
-local SECURE_KEY_URL = "https://raw.githubusercontent.com/6wp546y5jb-png/keys/main/VolleyballFPS.txt"
-local DISCORD_LINK = "https://discord.gg/skPJstQQhD"
 
 -- Prevent duplicate UIs
 if CoreGui:FindFirstChild("FishysCollectionKeySystem") then
@@ -17,7 +17,7 @@ ScreenGui.Name = "FishysCollectionKeySystem"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
--- Sleek Modern Theme Configuration
+-- Sleek Modern Theme Configuration (With Transparency & Perfect Spacing)
 local BorderColor = Color3.fromRGB(45, 120, 75)   -- Muted, dark matte green border
 local BgColor = Color3.fromRGB(12, 14, 15)        -- Deep slate black/dark grey
 local CardBgColor = Color3.fromRGB(18, 20, 22)    -- Slightly lighter dark fill for modern contrast
@@ -124,7 +124,7 @@ StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 11
 StatusLabel.Parent = MainFrame
 
--- Optimizer Script Function
+-- Function to execute your Optimizer Script
 local function runOptimizerScript()
     if getgenv().PotatoOptimizerConnection then
         getgenv().PotatoOptimizerConnection:Disconnect()
@@ -132,12 +132,15 @@ local function runOptimizerScript()
     end
 
     getgenv().PotatoOptimizerLoaded = true
+
     if setfpscap then setfpscap(999) end
 
     local Players = game:GetService("Players")
     local Workspace = game:GetService("Workspace")
     local Lighting = game:GetService("Lighting")
     local SoundService = game:GetService("SoundService")
+    local UserInputService = game:GetService("UserInputService")
+
     local Terrain = Workspace:FindFirstChildOfClass("Terrain")
     local LocalPlayer = Players.LocalPlayer
 
@@ -190,6 +193,7 @@ local function runOptimizerScript()
         
         if obj:IsA("BasePart") then 
             obj.CastShadow = false
+            
             if obj.Transparency >= 0.9 or string.find(nameLower, "wall") or string.find(nameLower, "barrier") or string.find(nameLower, "clip") or string.find(nameLower, "invisible") then
                 obj.Transparency = 1
                 return
@@ -230,6 +234,7 @@ local function runOptimizerScript()
         end
     end
 
+    -- Core function to scan and process current map elements
     local function runFullObjectScan()
         pcall(function() 
             local descendants = Workspace:GetDescendants() 
@@ -240,6 +245,7 @@ local function runOptimizerScript()
         end)
     end
 
+    -- Core function to apply Lighting, Shadows, and Environment optimization
     local function applyLightingSettings()
         pcall(function() 
             for _, effect in ipairs(Lighting:GetChildren()) do 
@@ -249,9 +255,15 @@ local function runOptimizerScript()
             end 
             
             local targetSky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
-            targetSky.SkyboxBk = "rbxassetid://0"; targetSky.SkyboxDn = "rbxassetid://0"; targetSky.SkyboxFt = "rbxassetid://0"
-            targetSky.SkyboxLf = "rbxassetid://0"; targetSky.SkyboxRt = "rbxassetid://0"; targetSky.SkyboxUp = "rbxassetid://0"
-            targetSky.SunTextureId = ""; targetSky.MoonTextureId = ""; targetSky.CelestialBodiesShown = false
+            targetSky.SkyboxBk = "rbxassetid://0"
+            targetSky.SkyboxDn = "rbxassetid://0"
+            targetSky.SkyboxFt = "rbxassetid://0"
+            targetSky.SkyboxLf = "rbxassetid://0"
+            targetSky.SkyboxRt = "rbxassetid://0"
+            targetSky.SkyboxUp = "rbxassetid://0"
+            targetSky.SunTextureId = ""
+            targetSky.MoonTextureId = ""
+            targetSky.CelestialBodiesShown = false
 
             if Terrain then 
                 Terrain.WaterWaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterReflectance = 0; Terrain.WaterTransparency = 1; Terrain.Decoration = false 
@@ -274,14 +286,17 @@ local function runOptimizerScript()
         end)
     end
 
+    -- Initial setup execution
     runFullObjectScan()
     applyLightingSettings()
 
+    -- Dynamic monitoring for newly spawned map chunks/objects
     getgenv().PotatoOptimizerConnection = Workspace.DescendantAdded:Connect(function(obj)
         task.skip()
         pcall(processObject, obj)
     end)
 
+    -- LOOP 1: Reapply whole potato graphic scanning 5 more times, once every 15 seconds
     task.spawn(function()
         for i = 1, 5 do
             task.wait(15)
@@ -289,6 +304,7 @@ local function runOptimizerScript()
         end
     end)
 
+    -- LOOP 2: Continuously enforce lightning/shadow settings every 5 seconds
     task.spawn(function()
         while getgenv().PotatoOptimizerLoaded do
             task.wait(5)
@@ -296,6 +312,7 @@ local function runOptimizerScript()
         end
     end)
 
+    -- Send initialization confirmation
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", { 
             ["Title"] = "Fishy’s Collection", 
@@ -305,7 +322,7 @@ local function runOptimizerScript()
     end)
 end
 
--- Link Clipboard Interactivity
+-- Button Logic & Interactivity
 GetBtn.MouseButton1Click:Connect(function()
     if setclipboard then
         setclipboard(DISCORD_LINK)
@@ -318,31 +335,15 @@ GetBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Validation Handler (Integrated Connections)
 VerifyBtn.MouseButton1Click:Connect(function()
-    StatusLabel.Text = "Checking key..."
-    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    
-    local success, remoteKey = pcall(function()
-        return HttpService:GetAsync(SECURE_KEY_URL)
-    end)
-    
-    if success and remoteKey then
-        remoteKey = string.gsub(remoteKey, "%s+", "")
-        
-        if TextBox.Text == remoteKey then
-            StatusLabel.Text = "Key Approved! Loading script..."
-            StatusLabel.TextColor3 = Color3.fromRGB(70, 185, 115)
-            task.wait(1)
-            ScreenGui:Destroy()
-            runOptimizerScript()
-        else
-            StatusLabel.Text = "Incorrect key. Please try again."
-            StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
-        end
+    if TextBox.Text == CORRECT_KEY then
+        StatusLabel.Text = "Key Approved! Loading script..."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        task.wait(1)
+        ScreenGui:Destroy()
+        runOptimizerScript()
     else
-        StatusLabel.Text = "Failed to fetch key from server."
+        StatusLabel.Text = "Incorrect key. Please try again."
         StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
     end
 end)
-
